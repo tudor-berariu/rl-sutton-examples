@@ -31,8 +31,10 @@ class DiscreteEnvironment():
         """
         raise NotImplementedError
 
-    def get_mdp(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_mdp(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Returns the MDP's elements:
+             - inits must be |S| with
+                inits[i] = p(S[0] = s_i)
              - dynamics must be |S|x|A|x|S| with:
                 dynamics[i,j,k] = p(S[t+1] = s_j | S[t] = s_i, A[t] = a_k)
              - rewards must be |S|x|S| with

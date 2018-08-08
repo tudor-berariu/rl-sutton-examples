@@ -1,0 +1,15 @@
+title: Gradient SARSA for Mountain Car
+script: control
+environment: MountainCar-v0
+episodes: 100000
+gamma: 0.99
+features:
+  name: tiling
+  tiles_no: 10
+  min_values: 0
+  max_values: 999
+  update_bounds: yes
+algorithms:
+  - name: gsarsa
+    n: 3
+    lr: .0001

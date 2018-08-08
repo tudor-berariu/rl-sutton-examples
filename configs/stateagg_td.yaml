@@ -1,0 +1,29 @@
+title: State-aggregation for 1000-state random walk
+environment: thousand-states
+episodes: 100000
+gamma: 0.99
+features:
+  name: state-aggregation
+  bins_no: 10
+algorithms:
+  - name: gtd
+    n: 1
+    lr: .00001
+  - name: gtd
+    n: 1
+    lr: .00003
+  - name: gtd
+    n: 1
+    lr: .0001
+  - name: gtd
+    n: 1
+    lr: .0003
+  - name: gtd
+    n: 1
+    lr: .001
+  - name: gtd
+    n: 1
+    lr: .003
+  - name: gtd
+    n: 1
+    lr: .01

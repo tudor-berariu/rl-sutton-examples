@@ -1,3 +1,4 @@
+from argparse import Namespace
 from typing import Tuple
 import numpy as np
 
@@ -25,14 +26,18 @@ class ThousandState(DiscreteEnvironment):
         return self.__states_no
 
     @property
+    def action_space(self) -> Namespace:
+        return Namespace(n=2)
+
+    @property
     def actions_no(self) -> int:
         return 2
 
     def reset(self):
-        self._state = (self.states_no - 1) // 2
+        self._state = (self.nonterminal_states_no - 1) // 2
         return self._state
 
-    def step(self, action: int) -> Tuple[int, float, bool]:
+    def step(self, action: int) -> Tuple[int, float, bool, object]:
         state = self._state
         jump = np.random.randint(1, self.max_jump + 1)
         if action == ThousandState.LEFT:
@@ -50,7 +55,7 @@ class ThousandState(DiscreteEnvironment):
             reward, done = 0, False
 
         self._state = next_state if not done else None
-        return next_state, reward, done
+        return next_state, reward, done, {}
 
     def random_step(self) -> Tuple[int, float, bool]:
         return self.step(np.random.choice(ThousandState.ACTIONS))
@@ -61,6 +66,9 @@ class ThousandState(DiscreteEnvironment):
         max_jump = self.max_jump
         pjump = 1. / max_jump
 
+        inits = np.zeros((states_no,))
+        inits[(self.nonterminal_states_no - 1) // 2] = 1.
+
         # Terminal state are non-rewarding non-escaping state
         rewards = np.zeros((states_no, states_no))
         rewards[:, states_no - 2] = -1  # Terminating on the left
@@ -69,8 +77,8 @@ class ThousandState(DiscreteEnvironment):
         rewards[states_no - 1, states_no - 1] = 0
 
         dynamics = np.zeros((states_no, 2, states_no))
-        dynamics[states_no - 2, :, states_no - 2] = 1.
-        dynamics[states_no - 1, :, states_no - 1] = 1.
+        # dynamics[states_no - 2, :, states_no - 2] = 1.
+        # dynamics[states_no - 1, :, states_no - 1] = 1.
         for i in range(states_no - 2):
             # Jumping left
             dynamics[i, l_idx, max(0, i - max_jump):i] = pjump
@@ -81,4 +89,7 @@ class ThousandState(DiscreteEnvironment):
             out_right = max(i + max_jump - states_no + 3, 0)
             dynamics[i, r_idx, states_no - 1] = out_right * pjump
 
-        return dynamics, rewards
+        return inits, dynamics, rewards
+
+    def close(self) -> None:
+        pass
