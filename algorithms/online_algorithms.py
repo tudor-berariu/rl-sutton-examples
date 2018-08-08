@@ -3,16 +3,13 @@ from time import time
 from sys import stdout
 import numpy as np
 import pandas as pd
-from gym import Env
-from environments import DiscreteEnvironment
 from algorithms.feature_extractors import FeatureExtractor
 
 
 class OnlinePolicyEvaluation():
     """This is for our handcrafted discrete environments"""
 
-    def __init__(self,
-                 env: DiscreteEnvironment,
+    def __init__(self, env,
                  featurizer: FeatureExtractor,
                  gamma: float = 0.99,
                  **_kwargs) -> None:
@@ -92,8 +89,7 @@ class OnlinePolicyEvaluation():
 
 class OnlineControl():
 
-    def __init__(self,
-                 env: Env,
+    def __init__(self, env,
                  featurizer: FeatureExtractor,
                  gamma: float = 0.99,
                  run_id: int = 0,
@@ -147,15 +143,18 @@ class OnlineControl():
         if verbose:
             print(f"\n[{self.name:s}] End.")
 
-        results = {
+        results = pd.DataFrame({
             "step": np.array([p[0] for p in trace]),
             "return": np.array([p[1] for p in trace]),
             "error": np.array([p[2] for p in trace])
-        }
+        })
 
-        params = self._get_params()
+        for key, value in self._get_params().items():
+            results[key] = value
 
-        return self.name, self.run_id, params, results
+        results["run_id"] = self.run_id
+        results["name"] = self.name
+        return results
 
     @property
     def name(self) -> str:
@@ -164,16 +163,17 @@ class OnlineControl():
     def _before_training(self):
         pass
 
-    def _improve_policy(self, obs: np.ndarray,
+    def _improve_policy(self,
+                        obs: np.ndarray,
                         action: int,
                         reward: float, done: bool,
                         next_obs: np.ndarray) -> List[float]:
         raise NotImplementedError
 
-    def _predict(self, all_obs: List[np.ndarray]) -> np.ndarray:
+    def _predict(self, obs: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
-    def _end_training(self, all_obs: List[np.ndarray]) -> np.ndarray:
+    def _end_training(self) -> None:
         pass
 
     def _select_action(self, obs: np.ndarray) -> np.ndarray:

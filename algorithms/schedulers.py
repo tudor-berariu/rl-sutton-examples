@@ -1,6 +1,9 @@
+from typing import Union
+
+
 class Schedule(object):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__crt_value = None
 
     def __iter__(self):
@@ -13,7 +16,7 @@ class Schedule(object):
     def crt_value(self):
         return self.__crt_value
 
-    def __str__(self):
+    def __str__(self) -> str:
         raise NotImplementedError
 
 
@@ -26,7 +29,7 @@ class Constant(Schedule):
     def __next__(self):
         return self.__crt_value
 
-    def __str__(self, precision: int = 1, scientific: bool = True):
+    def __str__(self, precision: int = 1, scientific: bool = True) -> str:
         fmt = f".{precision:d}{'e' if scientific else 'f':s}"
         return f"{self.__crt_value:{fmt}}"
 
@@ -54,17 +57,19 @@ class Linear(Schedule):
             return value
         raise StopIteration
 
-    def __str__(self, precision: int = 1, scientific: bool = True):
+    def __str__(self, precision: int = 1, scientific: bool = True) -> str:
         fmt = f".{precision:d}{'e' if scientific else 'f':s}"
         return f"({self.__start:{fmt}}:{self.__step:{fmt}}:{self.__end:{fmt}})"
 
 
-def get_schedule(name, **kwargs):
+def get_schedule(name: Union[str, int, float], **kwargs) -> Schedule:
+    if isinstance(name, (float, int)):
+        return Constant(name)
     if name == "const":
         return Constant(**kwargs)
     elif name == "linear":
         return Linear(**kwargs)
-    raise ValueError
+    raise ValueError(name)
 
 
 __all__ = ['get_schedule', 'Constant', 'Linear']
@@ -81,6 +86,13 @@ def example():
 
     # 2. Constant
     values = get_schedule("const", value=.75)
+    print(f"{values}:", end="")
+    for _idx, val in zip(range(10), values):
+        print(f" {val: .3f}", end="")
+    print("")
+
+    # 3. Concise way to call with a single value
+    values = get_schedule(.75)
     print(f"{values}:", end="")
     for _idx, val in zip(range(10), values):
         print(f" {val: .3f}", end="")
