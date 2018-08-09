@@ -1,0 +1,20 @@
+name: gradient TD(n) for 1000 state
+env:
+  name: thousand_state
+
+gamma: 1
+
+features:
+  name: state-aggregation
+  bins_no: 20
+
+algorithm:
+  name: gtd
+  n: 5
+  lr: 0.00002
+  full_gradient: yes
+
+train:
+  episodes_no: 5000
+  report_freq: 200
+  verbose: True

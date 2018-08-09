@@ -10,9 +10,7 @@ def get_env(name: str, **kwargs):
     try:
         return gym.make(name)
     except gym.error.Error:
-        if name == "1000state":
-            return ThousandState(**kwargs)
-        raise ValueError(name)
+        return ENVIRONMENTS[name](**kwargs)
 
 
 __all__ = ['get_env', 'DiscreteEnvironment']
