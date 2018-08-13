@@ -1,57 +1,60 @@
-from typing import Dict, List, Tuple
+from typing import List, Tuple, Union
 from time import time
 from sys import stdout
 import numpy as np
 import pandas as pd
+from gym import Env
 from environments import DiscreteEnvironment
 from algorithms.policies import Policy
 from algorithms.feature_extractors import FeatureExtractor
 
 
 class OnlinePolicyEvaluation():
-    """This is for our handcrafted discrete environments"""
 
-    def __init__(self, env,
+    def __init__(self,
+                 env: Union[Env, DiscreteEnvironment],
                  featurizer: FeatureExtractor,
                  gamma: float = 0.99,
                  run_id: int = 0,
                  **_kwargs) -> None:
         self.env = env
+        self.actions_no = self.env.action_space.n
         self.featurizer = featurizer
         self.gamma = gamma
-        self.actions_no = self.env.action_space.n
         self.run_id = run_id
 
-    def run(self, episodes_no: int,
+        self.counting = isinstance(env, DiscreteEnvironment)
+
+    def run(self,
+            episodes_no: int,
             policy: Policy,
             targets: np.ndarray = None,
             state_dist: np.ndarray = None,
             report_freq: int = 200,
-            verbose: bool = True
-            ) -> Tuple[str, np.ndarray, np.ndarray, List[Tuple[int, float]]]:
+            verbose: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         if verbose:
             print(f"\n[{self.name:s}] Start.")
 
         env, featurizer = self.env, self.featurizer
 
-        if isinstance(env, DiscreteEnvironment):
+        counting = self.counting
+        if counting:
             states_no = env.nonterminal_states_no
             visits = np.zeros(states_no)
-        else:
-            visits = None
+
         self._before_training()
 
         steps_no, tick = 0, time()
 
         errors = []
-        res_step, res_error, res_realerror = [], [], []
+        episodes, td_errors, msv_errors = [], [], []
 
         for episode in range(episodes_no):
             state, done = env.reset(), False
             obs = featurizer(state)
             while not done:
                 next_state, reward, done, _ = env.step(policy(obs))
-                if visits is not None:
+                if counting:
                     visits[state] += 1
                 steps_no += 1
                 next_obs = None if done else featurizer(next_state)
@@ -59,18 +62,19 @@ class OnlinePolicyEvaluation():
                 state, obs = next_state, next_obs
 
             if (episode + 1) % report_freq == 0:
-                res_step.append(episode + 1)
-                res_error.append(np.mean(errors))
+                episodes.append(episode + 1)
+                mean_td_error = np.mean(errors)
+                td_errors.append(mean_td_error)
                 errors.clear()
                 if verbose:
                     msg = f"\r\tEpisode {episode + 1: 5d}"
-                if targets is not None:
+                    msg += f" | MTDE = {mean_td_error:5.4f}"
+                if counting and targets is not None:
                     values = self._predict([featurizer(s) for s in range(states_no)])
                     err = ((values - targets) * (values - targets)) @ state_dist
-                    res_realerror.append(err)
+                    msv_errors.append(err)
                     if verbose:
-                        msg += f" | MSE = {err:5.4f}"
-
+                        msg += f" | MSVE = {err:5.4f}"
                 if verbose:
                     fps, steps_no, tick = steps_no / (time() - tick), 0, time()
                     msg += f" | Fps = {fps:5.1f}       "
@@ -82,20 +86,24 @@ class OnlinePolicyEvaluation():
         if verbose:
             print(f"\n[{self.name:s}] End.")
 
-        if visits is not None:
+        if counting:
             visits /= np.sum(visits)
 
         results = pd.DataFrame({
-            "step": np.array(res_step),
-            "error": np.array(res_error)
+            "step": np.array(episodes),
+            "td-error": np.array(td_errors)
         })
 
-        if res_realerror:
-            results["real_error"] = np.array(res_realerror)
+        if counting:
+            results["msve"] = np.array(msv_errors)
         else:
             results["real_error"] = None
 
         for key, value in self._get_params().items():
+            results[key] = value
+
+        for key, value in featurizer.get_params().items():
+            assert key not in results
             results[key] = value
 
         results["run_id"] = self.run_id
@@ -121,13 +129,16 @@ class OnlinePolicyEvaluation():
     def _end_training(self) -> None:
         pass
 
+    def _get_params(self) -> dict:
+        return {}
+
 
 class OnlineControl():
 
     def __init__(self, env,
                  featurizer: FeatureExtractor,
-                 gamma: float=0.99,
-                 run_id: int=0,
+                 gamma: float = 0.99,
+                 run_id: int = 0,
                  **_kwargs) -> None:
         self.env = env
         self.featurizer = featurizer
@@ -136,9 +147,8 @@ class OnlineControl():
         self.run_id = run_id
 
     def run(self, episodes_no: int,
-            report_freq: int=200,
-            verbose: bool=True
-            ) -> Tuple[str, Dict[str, np.ndarray]]:
+            report_freq: int = 200,
+            verbose: bool = True) -> dict:
         if verbose:
             print(f"\n[{self.name:s}] Start.")
 
@@ -170,8 +180,8 @@ class OnlineControl():
                 errors.clear()
                 if verbose:
                     msg = f"\r\tEpisode {episode + 1: 5d}"
-                    msg += f" | Avg. return = {trace[-1][1]:.3f}"
-                    msg += f" | Avg. error = {trace[-1][2]:.3f}"
+                    msg += f" | Avg. return = {res_return[-1]:.3f}"
+                    msg += f" | Avg. error = {res_error[-1]:.3f}"
                     fps, steps_no, tick = steps_no / (time() - tick), 0, time()
                     msg += f" | Fps = {fps:5.1f}       "
                     stdout.write(msg)
