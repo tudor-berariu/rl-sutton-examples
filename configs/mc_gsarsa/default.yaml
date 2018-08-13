@@ -28,6 +28,6 @@ algorithm:
     end: .01
 
 train:
-  episodes_no: 5000
+  episodes_no: 50000
   report_freq: 200
   verbose: True
