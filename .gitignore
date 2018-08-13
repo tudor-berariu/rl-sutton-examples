@@ -1,0 +1,10 @@
+*~
+\#*#
+
+__pycache__
+
+results/
+
+# Experiments
+configs/mc_gsarsa/mc_gsarsa_*.yaml
+configs/semi_vs_full/semi_vs_full_*.yaml

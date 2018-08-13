@@ -1,0 +1,32 @@
+env:
+  name: MountainCar-v0
+
+gamma: 1
+
+features:
+  name: tiling
+  tiles_no: 8
+  tilings_no: 8
+  min_values: [-1.2, -0.07]
+  max_values: [.5, .07]
+  granularity: 9
+
+
+algorithm:
+  name: gsarsa
+  n: 5
+  lr:
+    name: linear
+    start: 1.0e-02
+    step: -0.00001
+    end: .00001
+  eps:
+    name: linear
+    start: 1.
+    step: -0.01
+    end: .01
+
+train:
+  episodes_no: 20000
+  report_freq: 250
+  verbose: True
