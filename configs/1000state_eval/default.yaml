@@ -11,4 +11,4 @@ features:
 train:
   episodes_no: 100000
   report_freq: 200
-  vebose: False
+  verbose: False
