@@ -20,7 +20,7 @@ class GradientTD(OnlinePolicyEvaluation):
             self.lr = get_schedule(lr)
         self.n = n
         self.full_gradient = full_gradient
-        self._weight, self._states, self._rewards = None, None, None
+        self._weight, self._obs_trace, self._reward_trace = None, None, None
         self.__gammas = self.gamma ** np.arange(n)
 
     @property
@@ -34,40 +34,41 @@ class GradientTD(OnlinePolicyEvaluation):
 
     def _before_training(self):
         self._weight = np.zeros(self.featurizer.features_no)
-        self._states = []
-        self._rewards = []
+        self._obs_trace = []
+        self._reward_trace = []
         self.lr = iter(self.lr)
 
     def _improve_policy(self, obs: np.ndarray, reward: float, done: bool,
                         next_obs: np.ndarray) -> None:
-        self._states.append(obs)
-        self._rewards.append(reward)
+        self._obs_trace.append(obs)
+        self._reward_trace.append(reward)
+
         weight = self._weight
-        errors = []
-        if len(self._states) == self.n:
-            state = self._states.pop(0)
-            ret = self.__gammas @ self._rewards
-            self._rewards.pop(0)
-            if not done:
-                ret += (self.gamma ** self.n) * next_obs @ weight
-            err = ret - state @ weight
+        td_errors = []
+
+        if len(self._obs_trace) == self.n and not done:
+            obs = self._obs_trace.pop(0)
+            ret = self.__gammas @ self._reward_trace
+            self._reward_trace.pop(0)
+            ret += (self.gamma ** self.n) * next_obs @ weight
+            td_error = ret - obs @ weight
             lr = next(self.lr)
-            weight += lr * err * state
-            if self.full_gradient and not done:
-                weight -= lr * err * (self.gamma ** self.n) * next_obs
-            errors.append(err * err)
+            weight += lr * td_error * obs
+            if self.full_gradient:
+                weight -= lr * td_error * (self.gamma ** self.n) * next_obs
+            td_errors.append(td_error * td_error)
 
         if done:
-            left_no = len(self._states)
-            while self._states:
-                state = self._states.pop(0)
-                ret = self.__gammas[:left_no] @ self._rewards
-                self._rewards.pop(0)
-                err = ret - state @ weight
-                weight += next(self.lr) * err * state
-                errors.append(err * err)
+            left_no = len(self._obs_trace)
+            while self._obs_trace:
+                obs = self._obs_trace.pop(0)
+                ret = self.__gammas[:left_no] @ self._reward_trace
+                self._reward_trace.pop(0)
+                td_error = ret - obs @ weight
+                weight += next(self.lr) * td_error * obs
+                td_errors.append(td_error * td_error)
                 left_no -= 1
-        return errors
+        return td_errors
 
     def _predict(self, obs: np.ndarray) -> np.ndarray:
         return obs @ self._weight

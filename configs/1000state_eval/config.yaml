@@ -1,0 +1,35 @@
+algorithm:
+  name:
+    - gtd
+    - gmc
+  n:
+    - 1
+    - 3
+    - 5
+    - 7
+    - 9
+    - 11
+  lr:
+    - 0.00001
+    - 0.00003
+    - 0.0001
+    - 0.0003
+    - 0.001
+    - 0.003
+    - 0.01
+    - 0.03
+    - 0.1
+
+  full_gradient: [True, False]
+
+filter_out:
+  - left:
+      algorithm: name
+    right:
+      algorithm: n
+    exclude: [['gmc', 3], ['gmc', 5], ['gmc', 7], ['gmc', 9], ['gmc', 11]]
+  - left:
+      algorithm: name
+    right:
+      algorithm: full_gradient
+    exclude: [['gmc', True]]

@@ -1,0 +1,14 @@
+name: gradient algorithms for 1000 state
+env:
+  name: thousand_state
+
+gamma: 1
+
+features:
+  name: state-aggregation
+  bins_no: 10
+
+train:
+  episodes_no: 10000
+  report_freq: 200
+  vebose: False

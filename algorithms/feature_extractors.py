@@ -16,6 +16,9 @@ class FeatureExtractor:
     def __call__(self, state) -> np.ndarray:
         raise NotImplementedError
 
+    def get_params(self) -> dict:
+        return {}
+
 
 class StateAggregator(FeatureExtractor):
 
@@ -33,6 +36,9 @@ class StateAggregator(FeatureExtractor):
         features = np.zeros(self.__bins_no)
         features[state // self.__bin_size] = 1
         return features
+
+    def get_params(self):
+        return {"bins_no": self.__bins_no}
 
 
 class TilingCode(FeatureExtractor):
@@ -145,6 +151,11 @@ class TilingCode(FeatureExtractor):
         features = np.zeros((self.dims_no * self.tilings_no, self.tiles_no))
         features[self.__range, indices] = 1
         return features.reshape(-1)
+
+    def get_params(self):
+        return {"tilings_no": self.tilings_no,
+                "tiles_no": self.tiles_no,
+                "granularity": self.granularity}
 
 
 def get_feature_extractor(env: Union[Env, DiscreteEnvironment],
