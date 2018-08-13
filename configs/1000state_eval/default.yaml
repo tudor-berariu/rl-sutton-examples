@@ -9,6 +9,6 @@ features:
   bins_no: 10
 
 train:
-  episodes_no: 10000
+  episodes_no: 100000
   report_freq: 200
   vebose: False
